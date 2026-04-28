@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-// Category emoji map
 const CATEGORY_EMOJI = {
   Food: "🍔",
   Transport: "🚌",
@@ -12,18 +11,35 @@ const CATEGORY_EMOJI = {
   Other: "📦",
 };
 
+const CATEGORIES = [
+  "All",
+  "Food",
+  "Transport",
+  "Shopping",
+  "Health",
+  "Education",
+  "Entertainment",
+  "Other",
+];
+
 function ExpenseList({ refresh, onDelete }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("All");
 
-  // ✅ Fetch expenses from Supabase
   const fetchExpenses = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("expenses")
         .select("*")
-        .order("date", { ascending: false }); // newest first
+        .order("date", { ascending: false });
+
+      if (activeFilter !== "All") {
+        query = query.eq("category", activeFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching:", error.message);
@@ -37,12 +53,10 @@ function ExpenseList({ refresh, onDelete }) {
     }
   };
 
-  // ✅ useEffect — fetch when component loads or refresh changes
   useEffect(() => {
     fetchExpenses();
-  }, [refresh]); // 👈 re-fetches every time refresh changes
+  }, [refresh, activeFilter]);
 
-  // ✅ Delete expense
   const handleDelete = async (id) => {
     const confirm = window.confirm("Delete this expense?");
     if (!confirm) return;
@@ -50,16 +64,15 @@ function ExpenseList({ refresh, onDelete }) {
     const { error } = await supabase
       .from("expenses")
       .delete()
-      .eq("id", id); // delete where id matches
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting:", error.message);
     } else {
-      onDelete(); // tell Dashboard to refresh
+      onDelete();
     }
   };
 
-  // Format date nicely
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
@@ -68,49 +81,93 @@ function ExpenseList({ refresh, onDelete }) {
   };
 
   return (
-    <div style={styles.card}>
-      <h3 style={styles.title}>📋 Recent Expenses</h3>
+    <div className="bg-white rounded-xl shadow-sm p-6">
 
-      {/* Loading state */}
+      {/* Header */}
+      <h3 className="text-lg font-bold text-gray-800 mb-4">
+        📋 Recent Expenses
+      </h3>
+
+      {/* Filter Bar */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setActiveFilter(cat)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition
+              ${activeFilter === cat
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+          >
+            {cat === "All" ? "🗂️ All" : `${CATEGORY_EMOJI[cat]} ${cat}`}
+          </button>
+        ))}
+      </div>
+
+      {/* Results Count */}
+      <p className="text-xs text-gray-400 mb-3">
+        {loading
+          ? "Loading..."
+          : `${expenses.length} expense${expenses.length !== 1 ? "s" : ""} found`}
+      </p>
+
+      {/* Loading */}
       {loading && (
-        <p style={{ color: "#636e72", textAlign: "center" }}>Loading...</p>
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-14 bg-gray-100 rounded-lg animate-pulse"
+            />
+          ))}
+        </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty State */}
       {!loading && expenses.length === 0 && (
-        <div style={styles.empty}>
-          <p>No expenses yet!</p>
-          <p style={{ fontSize: "0.85rem", color: "#b2bec3" }}>
-            Add your first expense 👈
+        <div className="text-center py-12">
+          <p className="text-4xl mb-3">🧾</p>
+          <p className="text-gray-500 font-semibold">No expenses found!</p>
+          <p className="text-gray-400 text-sm mt-1">
+            {activeFilter === "All"
+              ? "Add your first expense 👈"
+              : `No ${activeFilter} expenses yet`}
           </p>
         </div>
       )}
 
-      {/* Expenses list */}
+      {/* Expenses List */}
       {!loading && expenses.length > 0 && (
-        <div>
+        <div className="flex flex-col divide-y divide-gray-100">
           {expenses.map((expense) => (
-            <div key={expense.id} style={styles.item}>
-
-              {/* Left — emoji + details */}
-              <div style={styles.itemLeft}>
-                <span style={styles.emoji}>
+            <div
+              key={expense.id}
+              className="flex items-center justify-between py-3 hover:bg-gray-50 px-2 rounded-lg transition"
+            >
+              {/* Left */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-xl">
                   {CATEGORY_EMOJI[expense.category] || "📦"}
-                </span>
+                </div>
                 <div>
-                  <p style={styles.itemTitle}>{expense.title}</p>
-                  <p style={styles.itemMeta}>
+                  <p className="font-semibold text-gray-800 text-sm">
+                    {expense.title}
+                  </p>
+                  <p className="text-xs text-gray-400">
                     {expense.category} • {formatDate(expense.date)}
                   </p>
                 </div>
               </div>
 
-              {/* Right — amount + delete */}
-              <div style={styles.itemRight}>
-                <p style={styles.amount}>Rs. {expense.amount}</p>
+              {/* Right */}
+              <div className="flex items-center gap-4">
+                <p className="font-bold text-red-500 text-sm">
+                  Rs. {expense.amount.toLocaleString()}
+                </p>
                 <button
                   onClick={() => handleDelete(expense.id)}
-                  style={styles.deleteBtn}
+                  className="text-gray-300 hover:text-red-500 transition text-lg"
                 >
                   🗑️
                 </button>
@@ -124,66 +181,5 @@ function ExpenseList({ refresh, onDelete }) {
     </div>
   );
 }
-
-const styles = {
-  card: {
-    background: "white",
-    borderRadius: "10px",
-    padding: "1.5rem",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-    height: "100%",
-  },
-  title: {
-    marginBottom: "1.5rem",
-    color: "#2d3436",
-    fontSize: "1.1rem",
-  },
-  empty: {
-    textAlign: "center",
-    padding: "2rem",
-    color: "#636e72",
-  },
-  item: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "0.85rem 0",
-    borderBottom: "1px solid #f0f0f0",
-  },
-  itemLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-  },
-  emoji: {
-    fontSize: "1.5rem",
-  },
-  itemTitle: {
-    fontWeight: "600",
-    color: "#2d3436",
-    marginBottom: "0.2rem",
-  },
-  itemMeta: {
-    fontSize: "0.8rem",
-    color: "#b2bec3",
-  },
-  itemRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
-  },
-  amount: {
-    fontWeight: "700",
-    color: "#d63031",
-    fontSize: "1rem",
-  },
-  deleteBtn: {
-    background: "none",
-    border: "none",
-    fontSize: "1.1rem",
-    cursor: "pointer",
-    padding: "0.2rem",
-  },
-};
 
 export default ExpenseList;

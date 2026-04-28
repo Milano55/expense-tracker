@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { HiCash } from "react-icons/hi";
 import SummaryCards from "./SummaryCards";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
@@ -12,68 +13,47 @@ function Dashboard() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-gray-100">
 
       {/* Header */}
-      <div style={styles.header}>
-        <h1 style={styles.title}>💰 Expense Tracker</h1>
-        <p style={styles.subtitle}>Track your spending easily</p>
+      <div className="bg-white shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-center gap-2">
+            <HiCash className="text-blue-500 text-4xl" />
+            <h1 className="text-3xl font-bold text-gray-800">
+              Expense Tracker
+            </h1>
+          </div>
+          <p className="text-gray-400 text-center mt-1 text-sm">
+            Track your spending easily
+          </p>
+        </div>
       </div>
-
-      {/* Summary Cards */}
-      <SummaryCards refresh={refresh} />
 
       {/* Main Content */}
-      <div style={styles.mainContent}>
+      <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* Left — Form */}
-        <div style={styles.left}>
-          <ExpenseForm onExpenseAdded={handleRefresh} />
+        {/* Summary Cards */}
+        <SummaryCards refresh={refresh} />
+
+        {/* Form + List */}
+        <div className="flex flex-col lg:flex-row gap-6 mt-6">
+          <div className="w-full lg:w-1/3">
+            <ExpenseForm onExpenseAdded={handleRefresh} />
+          </div>
+          <div className="w-full lg:w-2/3">
+            <ExpenseList refresh={refresh} onDelete={handleRefresh} />
+          </div>
         </div>
 
-        {/* Right — List */}
-        <div style={styles.right}>
-          <ExpenseList refresh={refresh} onDelete={handleRefresh} />
+        {/* Chart */}
+        <div className="mt-6">
+          <ExpenseChart refresh={refresh} />
         </div>
 
       </div>
-
-      {/* Chart */}
-      <ExpenseChart refresh={refresh} />
-
     </div>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "2rem",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "2rem",
-  },
-  title: {
-    fontSize: "2rem",
-    color: "#2d3436",
-  },
-  subtitle: {
-    color: "#636e72",
-    marginTop: "0.3rem",
-  },
-  mainContent: {
-    display: "flex",
-    gap: "2rem",
-    marginTop: "2rem",
-  },
-  left: {
-    flex: 1,
-  },
-  right: {
-    flex: 2,
-  },
-};
 
 export default Dashboard;
